@@ -1,6 +1,6 @@
 @echo off
-REM Doble click en Windows: sube los cambios locales a GitHub.
-setlocal enabledelayedexpansion
+setlocal EnableDelayedExpansion
+title Markitdown - Actualizar GitHub
 cd /d "%~dp0"
 
 echo.
@@ -8,12 +8,13 @@ echo ============================================
 echo   Actualizando GitHub desde esta carpeta
 echo ============================================
 echo.
-echo Carpeta: %cd%
+echo Carpeta: %CD%
 echo.
 
 where git >nul 2>nul
 if errorlevel 1 (
-  echo ERROR: git no esta instalado.
+  echo ERROR: no encontre git en el PATH.
+  echo Instalalo desde https://git-scm.com/download/win
   pause
   exit /b 1
 )
@@ -24,14 +25,15 @@ if not exist ".git" (
   exit /b 1
 )
 
-for /f "tokens=*" %%i in ('git rev-parse --abbrev-ref HEAD') do set BRANCH=%%i
+for /f "tokens=*" %%i in ('git rev-parse --abbrev-ref HEAD') do set "BRANCH=%%i"
+
 if "!BRANCH!"=="" (
   echo ERROR: no estas en una rama.
   pause
   exit /b 1
 )
 if "!BRANCH!"=="HEAD" (
-  echo ERROR: no estas en una rama.
+  echo ERROR: estas en estado detached HEAD. Hace git checkout primero.
   pause
   exit /b 1
 )
@@ -42,11 +44,13 @@ echo Cambios pendientes:
 git status --short
 echo.
 
-for /f %%i in ('git status --porcelain') do set HASCHANGES=1
+set "HASCHANGES="
+for /f %%i in ('git status --porcelain') do set "HASCHANGES=1"
 
 if defined HASCHANGES (
-  set /p MSG=Mensaje del commit (ENTER usa fecha actual):
-  if "!MSG!"=="" set MSG=update %DATE% %TIME%
+  set "MSG="
+  set /p "MSG=Mensaje del commit [ENTER usa fecha actual]: "
+  if "!MSG!"=="" set "MSG=update %DATE% %TIME%"
   echo.
   echo ^>^> git add -A
   git add -A
@@ -58,10 +62,10 @@ if defined HASCHANGES (
 
 echo.
 echo ^>^> git push -u origin !BRANCH!
-git push -u origin !BRANCH!
+git push -u origin "!BRANCH!"
 if errorlevel 1 (
   echo.
-  echo ERROR: el push fallo.
+  echo ERROR: el push fallo. Revisa el mensaje arriba.
 ) else (
   echo.
   echo Listo. Cambios publicados en GitHub.
