@@ -7,6 +7,8 @@ env/
 .env
 uploads/
 output/
+index.json
+settings.json
 .DS_Store
 .idea/
 .vscode/

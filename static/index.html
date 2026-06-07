@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Markitdown · Contexto para IA</title>
   <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -12,35 +14,51 @@
       <span class="logo">MD</span>
       <div>
         <h1>Markitdown · Contexto para IA</h1>
-        <p>Arrastrá archivos, los convierto a Markdown y los preparo para alimentar a tu modelo.</p>
+        <p>Arrastrá archivos, pegá URLs, transcribí audio/video. Combinado listo para tu modelo.</p>
       </div>
     </div>
     <div class="topbar-right">
-      <div class="hint-card">
-        Para subir tus cambios a GitHub: <b>doble click</b> en
-        <code>actualizar.command</code> (Mac), <code>actualizar.bat</code> (Windows) o
-        <code>actualizar.sh</code> (Linux).
+      <div class="health" id="health" title="Estado de dependencias"></div>
+      <button id="btn-theme" class="iconbtn" title="Cambiar tema">◐</button>
+      <button id="btn-settings" class="iconbtn" title="Ajustes">⚙</button>
+      <div class="hint-pill" title="Subir cambios a GitHub">
+        Subir cambios: doble click en <code>actualizar.command/.bat/.sh</code>
       </div>
     </div>
   </header>
 
   <main>
-    <section id="dropzone" class="dropzone">
-      <div class="dropzone-inner">
-        <div class="dz-icon">⬆</div>
-        <p class="dz-title">Arrastrá archivos aquí o hacé click</p>
-        <p class="dz-hint">Documentos (PDF · DOCX · XLSX · PPTX · HTML · TXT · MD · CSV · imágenes) → <b>markitdown</b><br/>Audio y video (MP3 · WAV · M4A · MP4 · MOV · MKV …) → <b>whisper</b></p>
-        <input id="file-input" type="file" multiple hidden />
+    <section class="ingest">
+      <div id="dropzone" class="dropzone">
+        <div class="dropzone-inner">
+          <div class="dz-icon">⬆</div>
+          <p class="dz-title">Arrastrá archivos aquí o hacé click</p>
+          <p class="dz-hint">PDF · DOCX · XLSX · PPTX · HTML · imágenes → <b>markitdown</b><br/>MP3 · WAV · M4A · MP4 · MOV · MKV → <b>whisper</b></p>
+          <input id="file-input" type="file" multiple hidden />
+        </div>
+      </div>
+
+      <div class="url-box">
+        <div class="url-row">
+          <input id="url-input" type="text" placeholder="Pegá una URL (web, artículo, YouTube…) y presioná Enter" />
+          <button id="btn-url-add" class="btn btn-primary">Agregar URL</button>
+        </div>
+        <p class="muted-sm">Web/artículos → markitdown · YouTube → yt-dlp + whisper</p>
       </div>
     </section>
 
     <section class="toolbar">
       <div class="toolbar-left">
-        <button id="btn-convert-all" class="btn">Convertir todo</button>
-        <button id="btn-combine" class="btn">Combinar en un solo MD</button>
-        <a id="btn-download-combined" class="btn btn-primary" href="/api/download-combined">⬇ Descargar combinado</a>
+        <button id="btn-convert-all" class="btn">Convertir pendientes</button>
+        <button id="btn-combine" class="btn btn-primary">Combinar seleccionados</button>
+        <button id="btn-copy-combined" class="btn">Copiar combinado</button>
+        <a id="btn-download-combined" class="btn" href="/api/download-combined">⬇ Descargar</a>
+        <span id="combined-info" class="muted-sm"></span>
       </div>
       <div class="toolbar-right">
+        <input id="search" class="search" type="text" placeholder="Buscar… (/)" />
+        <button id="btn-select-all" class="iconbtn" title="Seleccionar todo (Ctrl+A)">☑</button>
+        <button id="btn-delete-selected" class="iconbtn danger" title="Borrar seleccionados (Del)">🗑</button>
         <button id="btn-clear" class="btn btn-ghost">Limpiar todo</button>
       </div>
     </section>
@@ -49,25 +67,77 @@
       <div class="files-head">
         <h2>Archivos</h2>
         <span id="files-count" class="muted">0</span>
-        <span class="muted-sm">· <b>doble click</b> en un archivo para volver a convertirlo · click para previsualizar</span>
+        <span class="muted-sm">· <b>doble click</b> re-convierte · click previsualiza · arrastrá para reordenar</span>
+        <span class="muted-sm right">Tokens totales: <b id="tokens-total">0</b></span>
       </div>
       <ul id="file-list" class="file-list"></ul>
-      <p id="empty-hint" class="empty-hint">Todavía no soltaste nada. Probá arrastrar un PDF, un audio o un video.</p>
+      <p id="empty-hint" class="empty-hint">Todavía no soltaste nada. Probá un PDF, un audio o un link de YouTube.</p>
     </section>
   </main>
 
   <aside id="preview" class="preview hidden">
     <header>
       <h3 id="preview-title">Vista previa</h3>
-      <div>
-        <a id="preview-download" class="btn btn-ghost" href="#">⬇ MD</a>
-        <button id="preview-close" class="btn btn-ghost">Cerrar</button>
+      <div class="preview-tabs">
+        <button class="tab active" data-tab="render">Render</button>
+        <button class="tab" data-tab="raw">Crudo</button>
+      </div>
+      <div class="preview-actions">
+        <button id="preview-copy" class="iconbtn" title="Copiar MD">⧉</button>
+        <a id="preview-download" class="iconbtn" href="#" title="Descargar .md">⬇</a>
+        <button id="preview-close" class="iconbtn" title="Cerrar (Esc)">✕</button>
       </div>
     </header>
-    <pre id="preview-body"></pre>
+    <div id="preview-body-render" class="preview-body md"></div>
+    <pre id="preview-body-raw" class="preview-body hidden"></pre>
+  </aside>
+
+  <aside id="settings" class="drawer hidden">
+    <header>
+      <h3>Ajustes</h3>
+      <button id="settings-close" class="iconbtn" title="Cerrar">✕</button>
+    </header>
+    <div class="drawer-body">
+      <div class="field">
+        <label>Modelo Whisper</label>
+        <select id="set-whisper-model">
+          <option value="tiny">tiny — rápido, menos preciso</option>
+          <option value="base">base — equilibrio (recomendado)</option>
+          <option value="small">small</option>
+          <option value="medium">medium</option>
+          <option value="large">large — más preciso, más lento</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Idioma del audio</label>
+        <input id="set-whisper-language" type="text" placeholder="auto (ej: es, en, pt, fr…)" />
+        <span class="muted-sm">Dejá vacío para detección automática.</span>
+      </div>
+      <div class="field checkbox">
+        <label><input type="checkbox" id="set-whisper-translate" /> Traducir a inglés mientras transcribe</label>
+      </div>
+      <hr/>
+      <div class="field">
+        <label>Carpeta de auto-import (watch)</label>
+        <input id="set-watch-folder" type="text" placeholder="/ruta/a/carpeta" />
+        <span class="muted-sm">Archivos nuevos en esta carpeta se convierten solos.</span>
+      </div>
+      <div class="field checkbox">
+        <label><input type="checkbox" id="set-watch-enabled" /> Activar watch folder</label>
+      </div>
+      <hr/>
+      <div class="field">
+        <button id="btn-save-settings" class="btn btn-primary">Guardar ajustes</button>
+      </div>
+      <div class="field">
+        <label>Estado de dependencias</label>
+        <div id="settings-health" class="health-grid"></div>
+      </div>
+    </div>
   </aside>
 
   <div id="toast" class="toast hidden"></div>
+  <div id="overlay" class="overlay hidden"></div>
 
   <script src="/static/app.js"></script>
 </body>
