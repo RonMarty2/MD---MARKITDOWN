@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 
 echo ""
 echo "============================================"
-echo "  Iniciando Markitdown · Contexto para IA"
+echo "  Iniciando Markitdown - Contexto para IA"
 echo "============================================"
 echo ""
 
@@ -27,9 +27,18 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-echo "Instalando dependencias (puede tardar la primera vez)..."
-pip install --upgrade pip >/dev/null
-pip install -r requirements.txt
+if [ ! -f ".venv/.installed" ]; then
+  echo "Instalando dependencias (puede tardar varios minutos la primera vez)..."
+  pip install --upgrade pip >/dev/null
+  pip install "setuptools<81" wheel
+  echo ""
+  echo "Instalando openai-whisper (puede descargar torch, es grande)..."
+  pip install --no-build-isolation openai-whisper==20240930
+  echo ""
+  echo "Instalando el resto..."
+  pip install -r requirements.txt
+  touch .venv/.installed
+fi
 
 echo ""
 echo "Abriendo http://127.0.0.1:8000 ..."

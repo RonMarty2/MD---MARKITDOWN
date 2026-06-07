@@ -50,10 +50,32 @@ if errorlevel 1 (
   exit /b 1
 )
 
+REM Marcador para saltearse la instalacion en arranques posteriores
+if exist ".venv\.installed" goto :run
+
 echo.
-echo Instalando dependencias - puede tardar 1 a 3 minutos la primera vez...
+echo Instalando dependencias - puede tardar varios minutos la primera vez...
 echo.
+
 python -m pip install --upgrade pip
+python -m pip install "setuptools<81" wheel
+if errorlevel 1 (
+  echo ERROR: fallo la instalacion de setuptools/wheel.
+  pause
+  exit /b 1
+)
+
+echo.
+echo Instalando openai-whisper - puede descargar torch ^(grande^)...
+python -m pip install --no-build-isolation openai-whisper==20240930
+if errorlevel 1 (
+  echo ERROR: fallo la instalacion de openai-whisper.
+  pause
+  exit /b 1
+)
+
+echo.
+echo Instalando el resto...
 python -m pip install -r requirements.txt
 if errorlevel 1 (
   echo.
@@ -63,6 +85,9 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo done > ".venv\.installed"
+
+:run
 echo.
 echo ============================================
 echo   Servidor corriendo en http://127.0.0.1:8000
