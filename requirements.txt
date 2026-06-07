@@ -1,0 +1,5 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.17
+markitdown[all]==0.0.1a3
+openai-whisper==20240930

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Markitdown · Contexto para IA</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">MD</span>
+      <div>
+        <h1>Markitdown · Contexto para IA</h1>
+        <p>Arrastrá archivos, los convierto a Markdown y los preparo para alimentar a tu modelo.</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="hint-card">
+        Para subir tus cambios a GitHub: <b>doble click</b> en
+        <code>actualizar.command</code> (Mac), <code>actualizar.bat</code> (Windows) o
+        <code>actualizar.sh</code> (Linux).
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="dropzone" class="dropzone">
+      <div class="dropzone-inner">
+        <div class="dz-icon">⬆</div>
+        <p class="dz-title">Arrastrá archivos aquí o hacé click</p>
+        <p class="dz-hint">Documentos (PDF · DOCX · XLSX · PPTX · HTML · TXT · MD · CSV · imágenes) → <b>markitdown</b><br/>Audio y video (MP3 · WAV · M4A · MP4 · MOV · MKV …) → <b>whisper</b></p>
+        <input id="file-input" type="file" multiple hidden />
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="toolbar-left">
+        <button id="btn-convert-all" class="btn">Convertir todo</button>
+        <button id="btn-combine" class="btn">Combinar en un solo MD</button>
+        <a id="btn-download-combined" class="btn btn-primary" href="/api/download-combined">⬇ Descargar combinado</a>
+      </div>
+      <div class="toolbar-right">
+        <button id="btn-clear" class="btn btn-ghost">Limpiar todo</button>
+      </div>
+    </section>
+
+    <section class="files">
+      <div class="files-head">
+        <h2>Archivos</h2>
+        <span id="files-count" class="muted">0</span>
+        <span class="muted-sm">· <b>doble click</b> en un archivo para volver a convertirlo · click para previsualizar</span>
+      </div>
+      <ul id="file-list" class="file-list"></ul>
+      <p id="empty-hint" class="empty-hint">Todavía no soltaste nada. Probá arrastrar un PDF, un audio o un video.</p>
+    </section>
+  </main>
+
+  <aside id="preview" class="preview hidden">
+    <header>
+      <h3 id="preview-title">Vista previa</h3>
+      <div>
+        <a id="preview-download" class="btn btn-ghost" href="#">⬇ MD</a>
+        <button id="preview-close" class="btn btn-ghost">Cerrar</button>
+      </div>
+    </header>
+    <pre id="preview-body"></pre>
+  </aside>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
