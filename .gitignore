@@ -9,6 +9,8 @@ uploads/
 output/
 index.json
 settings.json
+logs/
+.run/
 .DS_Store
 .idea/
 .vscode/

@@ -45,6 +45,16 @@ Webapp local para convertir cualquier archivo a Markdown y armar contexto rápid
 
 ## Arrancar
 
+### Windows sin consola
+
+En Windows, usa doble click:
+
+- `INICIAR_MARKITDOWN.vbs` arranca la app en segundo plano y abre el navegador.
+- `ACTUALIZAR_MARKITDOWN.vbs` hace commit y push a GitHub con mensaje automatico.
+- `DETENER_MARKITDOWN.vbs` detiene el servidor iniciado en segundo plano.
+
+Los logs quedan en `logs/`. La primera ejecucion puede tardar varios minutos porque crea `.venv/` e instala dependencias.
+
 ### Doble click (fácil)
 - **Mac:** `iniciar.command`
 - **Windows:** `iniciar.bat`

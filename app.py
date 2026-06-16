@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -342,14 +343,18 @@ def safe_filename(s: str, fallback: str = "archivo") -> str:
     return (s or fallback)[:120]
 
 
+def yt_dlp_command(args: list[str]) -> list[str]:
+    return [sys.executable, "-m", "yt_dlp", *args]
+
+
 def download_youtube_audio(url: str) -> tuple[Path, str]:
     out_dir = tempfile.mkdtemp(prefix="ytdl_")
     out_template = str(Path(out_dir) / "%(title).100s.%(ext)s")
-    cmd = [
-        "yt-dlp", "-x", "--audio-format", "mp3",
+    cmd = yt_dlp_command([
+        "-x", "--audio-format", "mp3",
         "--no-playlist", "--restrict-filenames",
         "-o", out_template, url,
-    ]
+    ])
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "yt-dlp falló")
@@ -380,7 +385,7 @@ def health_check() -> dict:
     return {
         "ffmpeg": cmd_ok(["ffmpeg", "-version"]),
         "ffprobe": cmd_ok(["ffprobe", "-version"]),
-        "yt_dlp": cmd_ok(["yt-dlp", "--version"]),
+        "yt_dlp": cmd_ok(yt_dlp_command(["--version"])),
         "markitdown": mod_ok("markitdown"),
         "whisper": mod_ok("whisper"),
         "tiktoken": mod_ok("tiktoken"),
