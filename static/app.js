@@ -398,6 +398,7 @@ function setupEvents() {
   ["dragenter","dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("drag"); }));
   ["dragleave","drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("drag"); }));
   dz.addEventListener("drop", (e) => {
+    e.stopPropagation();
     const files = [...(e.dataTransfer?.files || [])];
     if (files.length) uploadFiles(files);
   });

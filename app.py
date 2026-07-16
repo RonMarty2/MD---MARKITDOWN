@@ -46,6 +46,9 @@ _index_lock = threading.Lock()
 _settings_lock = threading.Lock()
 _whisper_locks: dict[str, threading.Lock] = {}
 _whisper_models: dict[str, object] = {}
+_media_conversion_lock = threading.Lock()
+_active_conversions_lock = threading.Lock()
+_active_conversions: set[str] = set()
 _watch_thread: Optional[threading.Thread] = None
 _watch_stop = threading.Event()
 _watch_seen: set[str] = set()
@@ -268,14 +271,31 @@ def perform_conversion(file_id: str) -> dict:
 
 
 def start_conversion_async(file_id: str):
-    t = threading.Thread(target=lambda: _safe_convert(file_id), daemon=True)
+    with _active_conversions_lock:
+        if file_id in _active_conversions:
+            return None
+        _active_conversions.add(file_id)
+    t = threading.Thread(target=lambda: _run_conversion_job(file_id), daemon=True)
     t.start()
     return t
 
 
+def _run_conversion_job(file_id: str):
+    try:
+        _safe_convert(file_id)
+    finally:
+        with _active_conversions_lock:
+            _active_conversions.discard(file_id)
+
+
 def _safe_convert(file_id: str):
     try:
-        perform_conversion(file_id)
+        entry = load_index().get(file_id)
+        if entry and is_media(entry.get("name", "")):
+            with _media_conversion_lock:
+                perform_conversion(file_id)
+        else:
+            perform_conversion(file_id)
     except HTTPException:
         pass
     except Exception as e:
@@ -298,7 +318,13 @@ def remove_from_order(file_id: str):
     save_settings(s)
 
 
-def create_file_entry(source_path: Path, display_name: str, source: str = "upload", url: Optional[str] = None) -> dict:
+def create_file_entry(
+    source_path: Path,
+    display_name: str,
+    source: str = "upload",
+    url: Optional[str] = None,
+    content_hash: Optional[str] = None,
+) -> dict:
     file_id = uuid.uuid4().hex
     size = source_path.stat().st_size
     entry = {
@@ -311,7 +337,7 @@ def create_file_entry(source_path: Path, display_name: str, source: str = "uploa
         "converter": None,
         "output_path": None,
         "converted_at": None,
-        "hash": None,
+        "hash": content_hash,
         "error": None,
         "tokens": None,
         "progress": None,
@@ -499,7 +525,26 @@ async def api_upload(files: list[UploadFile] = File(...)):
         stored = UPLOAD_DIR / f"{file_id}__{safe_name}"
         with open(stored, "wb") as out:
             shutil.copyfileobj(up.file, out)
-        entry = create_file_entry(stored, safe_name)
+        content_hash = file_hash(stored)
+        duplicate = next(
+            (
+                entry
+                for entry in load_index().values()
+                if entry.get("hash") == content_hash
+                and Path(entry.get("source_path") or "").exists()
+            ),
+            None,
+        )
+        if duplicate:
+            stored.unlink(missing_ok=True)
+            created.append({
+                "id": duplicate["id"],
+                "name": duplicate["name"],
+                "is_media": is_media(duplicate["name"]),
+                "duplicate": True,
+            })
+            continue
+        entry = create_file_entry(stored, safe_name, content_hash=content_hash)
         created.append({"id": entry["id"], "name": safe_name, "is_media": is_media(safe_name)})
         start_conversion_async(entry["id"])
     return {"created": created}
