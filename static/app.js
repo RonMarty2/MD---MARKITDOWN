@@ -372,6 +372,16 @@ async function refreshHealth() {
     $("#settings-health").innerHTML = map.map(([k, label]) =>
       `<div class="item"><span class="dot ${h[k] ? "ok" : "no"}"></span>${label}</div>`
     ).join("");
+
+    const chip = $("#device-chip");
+    if (chip) {
+      const isGpu = !!h.gpu;
+      chip.className = "device-chip " + (isGpu ? "gpu" : "cpu");
+      chip.textContent = isGpu ? `⚡ GPU: ${h.device_name}` : "🐢 CPU (lento)";
+      chip.title = isGpu
+        ? `Whisper usa la GPU: ${h.device_name}`
+        : "Whisper está usando CPU. Instalá torch CUDA para acelerar (ver README).";
+    }
   } catch (e) {}
 }
 

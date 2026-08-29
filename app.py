@@ -101,7 +101,17 @@ def get_whisper_model(model_name: str):
     with _whisper_locks[model_name]:
         if model_name not in _whisper_models:
             import whisper
-            _whisper_models[model_name] = whisper.load_model(model_name)
+            try:
+                import torch
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                dev_name = torch.cuda.get_device_name(0) if device == "cuda" else "CPU"
+            except Exception:
+                device, dev_name = "cpu", "CPU"
+            print(f"[whisper] cargando modelo '{model_name}' en {device.upper()} ({dev_name})", flush=True)
+            if device == "cpu":
+                print("[whisper] AVISO: usando CPU. Para usar GPU instala torch CUDA "
+                      "(ver README). Sera mucho mas lento en CPU.", flush=True)
+            _whisper_models[model_name] = whisper.load_model(model_name, device=device)
         return _whisper_models[model_name]
 
 
@@ -384,7 +394,18 @@ def health_check() -> dict:
         "markitdown": mod_ok("markitdown"),
         "whisper": mod_ok("whisper"),
         "tiktoken": mod_ok("tiktoken"),
+        **torch_info(),
     }
+
+
+def torch_info() -> dict:
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return {"device": "cuda", "device_name": torch.cuda.get_device_name(0), "gpu": True}
+        return {"device": "cpu", "device_name": "CPU", "gpu": False}
+    except Exception:
+        return {"device": "?", "device_name": "torch no instalado", "gpu": False}
 
 
 def watch_loop():
