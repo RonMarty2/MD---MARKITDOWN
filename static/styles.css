@@ -87,6 +87,18 @@ body {
 .health .h-dot.ok { background: var(--good); }
 .health .h-dot.no { background: var(--err); }
 
+.device-chip {
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--panel);
+  white-space: nowrap;
+}
+.device-chip.gpu { color: var(--good); border-color: color-mix(in oklab, var(--good) 45%, var(--border)); }
+.device-chip.cpu { color: var(--warn); border-color: color-mix(in oklab, var(--warn) 45%, var(--border)); }
+
 .hint-pill {
   background: var(--panel);
   border: 1px solid var(--border);

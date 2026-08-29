@@ -21,6 +21,7 @@ Webapp local para convertir cualquier archivo a Markdown y armar contexto rápid
 - Ingesta por URL pegando un link (web, artículo o YouTube).
 - Conversión en background con barra de progreso y tiempo transcurrido.
 - Health check: indicadores en la barra superior y panel de ajustes para `ffmpeg`, `ffprobe`, `whisper`, `markitdown`, `yt-dlp`, `tiktoken`.
+- **GPU automática**: `iniciar.bat` / `.command` detectan si tenés una GPU NVIDIA y instalan PyTorch con CUDA solos, sin preguntar nada. Si no hay GPU, usa CPU. Un chip en la barra superior (⚡ GPU / 🐢 CPU) te muestra cuál está activa.
 
 ### Comodidad / Visual
 - **Tema claro / oscuro** (toggle, persistido en el navegador).
@@ -111,6 +112,16 @@ actualizar.*        Doble click para pushear a GitHub
 - Los modelos de Whisper se descargan la primera vez que los usás (cachean en `~/.cache/whisper`).
 - `large` es más preciso pero requiere bastante RAM/VRAM. Si tu máquina sufre, usá `small` o `medium`.
 - La transcripción de YouTube respeta los términos de la plataforma — usalo con contenido propio o permitido.
+
+## GPU (CUDA) — automático
+
+`iniciar.bat` (Windows) e `iniciar.command` (Mac/Linux) detectan solos si tenés una GPU NVIDIA (buscan `nvidia-smi`, que instala el driver — no hace falta instalar CUDA toolkit aparte) e instalan la build de PyTorch con CUDA automáticamente. No hay que tocar nada a mano.
+
+- El chip **⚡ GPU: \<nombre de tu placa\>** o **🐢 CPU (lento)** en la barra superior te dice cuál está usando en cada momento.
+- Si ya corriste la app antes en CPU y después instalás/activás una GPU, el próximo doble click a `iniciar.*` lo detecta y reinstala PyTorch con CUDA solo, sin borrar nada más.
+- Si tenés GPU pero el script no la detecta, corré `nvidia-smi` en una terminal: si da error, el driver de NVIDIA no está bien instalado (bajalo de [nvidia.com/drivers](https://www.nvidia.com/Download/index.aspx)).
+- Si la instalación de CUDA falla (por ejemplo tu driver es muy viejo para `cu121`), el script cae automáticamente a CPU para que la app funcione igual; después podés instalar a mano una build más vieja siguiendo [pytorch.org/get-started/locally](https://pytorch.org/get-started/locally/) (elegí `cu118` en vez de `cu121`).
+- GPUs AMD o Apple Silicon (Mac M1/M2/M3): por ahora la detección automática es solo NVIDIA/CUDA; corre en CPU (en Mac, razonablemente rápido igual).
 
 ## Licencia
 
